@@ -60,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    var url = Uri.parse('${AppConfig.baseUrl}/api/register');
+    var url = Uri.parse('${AppConfig.baseUrl}/api/auth/register');
 
     try {
       var response = await http.post(

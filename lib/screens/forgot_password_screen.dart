@@ -34,7 +34,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
 
-    var url = Uri.parse('${AppConfig.baseUrl}/api/forgot-password');
+    var url = Uri.parse('${AppConfig.baseUrl}/api/auth/forgot-password');
 
     try {
       var response = await http.post(

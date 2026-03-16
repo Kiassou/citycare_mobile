@@ -1,5 +1,5 @@
+import 'package:citycare_mobile/models/user_model.dart';
 import 'package:citycare_mobile/screens/admin_home_screen.dart';
-import 'package:citycare_mobile/screens/citizen_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -23,8 +23,17 @@ class CityCareApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/forgot': (context) => ForgotPasswordScreen(),
-        '/admin_home': (context) => AdminHomeScreen(),
-        '/citizen_home': (context) => CitizenHomeScreen(),
+        // On ne met pas /admin_home ici car il a besoin d'un argument 'user'
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/admin_home') {
+          // On récupère l.utilisateur passé lors du Navigator.push
+          final user = settings.arguments as UserModel;
+          return MaterialPageRoute(
+            builder: (context) => AdminHomeScreen(user: user),
+          );
+        }
+        return null;
       },
     );
   }

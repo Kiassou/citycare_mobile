@@ -1,5 +1,7 @@
 import 'dart:ui'; // Obligatoire pour BackdropFilter
 import 'package:citycare_mobile/config.dart';
+import 'package:citycare_mobile/models/user_model.dart';
+import 'package:citycare_mobile/screens/citizen_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -51,10 +53,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_isButtonEnabled || _isLoading) return;
 
     setState(() {
-      _isLoading = true; // Début du chargement
+      _isLoading = true;
     });
 
-    var url = Uri.parse('${AppConfig.baseUrl}/api/login');
+    var url = Uri.parse('${AppConfig.baseUrl}/api/auth/login');
 
     try {
       var response = await http.post(
@@ -66,23 +68,51 @@ class _LoginScreenState extends State<LoginScreen> {
         }),
       );
 
+      print("STATUS CODE: ${response.statusCode}");
+
       var data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        String role = data["user"]["role"];
-        // Navigation chic avec transition (optionnel, pushReplacementNamed suffit)
-        if (role == "admin") {
-          Navigator.pushReplacementNamed(context, "/admin_home");
+        final user = UserModel.fromJson(data["user"]);
+
+        if (user.role == "admin") {
+          // Option A : Si tu as défini la route dans main.dart
+          Navigator.pushReplacementNamed(
+            context,
+            "/admin_home",
+            arguments: user,
+          );
+
+          // Option B (Plus sûre pour le test) : Navigation directe
+          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomeScreen(user: user)));
         } else {
-          Navigator.pushReplacementNamed(context, "/citizen_home");
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CitizenHomeScreen(user: user),
+            ),
+          );
         }
-      } else {
-        _showErrorSnackBar(data["message"] ?? "Erreur de connexion");
       }
+      // --- NOUVEAU : Gestion des erreurs envoyées par le serveur ---
+      else {
+        // On récupère le message d'erreur envoyé par ton API (ex: data['message'])
+        // Sinon on affiche un message par défaut selon le code HTTP
+        String errorMsg = data["message"] ?? "Erreur d'authentification";
+
+        if (response.statusCode == 401) {
+          errorMsg = "Mot de passe incorrect";
+        } else if (response.statusCode == 404) {
+          errorMsg = "Utilisateur introuvable";
+        }
+
+        _showErrorSnackBar(errorMsg);
+      }
+      // -----------------------------------------------------------
     } catch (e) {
+      print("ERREUR CONNEXION: $e");
       _showErrorSnackBar("Impossible de joindre le serveur.");
     } finally {
-      // S'assure que le chargement s'arrête même en cas d'erreur
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -113,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("images/citycare.png"),
+                image: AssetImage("assets/images/citycare.png"),
                 fit: BoxFit.cover,
               ),
             ),
@@ -273,11 +303,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 20),
 
                         /// LIEN REGISTER
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               "Pas encore membre ?",
