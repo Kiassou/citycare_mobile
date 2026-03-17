@@ -11,7 +11,6 @@ import 'package:citycare_mobile/screens/notifications_screen.dart';
 import 'package:citycare_mobile/screens/profile_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:http/http.dart' as http;
 
 class CitizenHomeScreen extends StatefulWidget {
@@ -29,36 +28,61 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   int _currentPage = 0;
   Timer? _timer;
 
-  IconData _getIconForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'déchets':
-      case 'ordures':
-        return Icons.delete_outline;
-      case 'eau':
-      case 'fuite d\'eau':
-        return Icons.water_drop;
-      case 'électricité':
-      case 'éclairage':
-        return Icons.lightbulb_outline;
-      case 'route':
-      case 'nids de poule':
-        return Icons.add_road;
-      default:
-        return Icons.report_problem_outlined;
-    }
+  // Variables pour les news dynamiques
+  List<dynamic> _realNews = [];
+  bool _isLoadingNews = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRealNews();
+    _fetchUnreadCount();
+
+    // Timer pour le défilement automatique des news
+    _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
+      if (_realNews.isNotEmpty) {
+        if (_currentPage < _realNews.length - 1) {
+          _currentPage++;
+        } else {
+          _currentPage = 0;
+        }
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOutQuart,
+          );
+        }
+      }
+    });
   }
 
-  String _formatTimeAgo(String dateStr) {
-    DateTime date = DateTime.parse(dateStr).toLocal();
-    Duration diff = DateTime.now().difference(date);
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
 
-    if (diff.inSeconds < 60) return "À l'instant";
-    if (diff.inMinutes < 60) return "Il y a ${diff.inMinutes} min";
-    if (diff.inHours < 24) return "Il y a ${diff.inHours} h";
-    if (diff.inDays < 7) return "Il y a ${diff.inDays} j";
-    if (diff.inDays < 30) return "Il y a ${(diff.inDays / 7).floor()} sem";
+  // --- LOGIQUE API ---
 
-    return "${date.day}/${date.month}/${date.year}"; // Date classique si trop vieux
+  Future<void> _fetchRealNews() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/news'),
+      );
+      if (response.statusCode == 200) {
+        if (mounted) {
+          setState(() {
+            _realNews = jsonDecode(response.body);
+            _isLoadingNews = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("🔥 Erreur News: $e");
+      if (mounted) setState(() => _isLoadingNews = false);
+    }
   }
 
   Future<void> _fetchUnreadCount() async {
@@ -68,12 +92,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           '${AppConfig.baseUrl}/api/auth/notifications/${widget.user.id}',
         ),
       );
-
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         if (mounted) {
           setState(() {
-            // On filtre pour ne garder que les non-lues
             unreadNotificationsCount = data
                 .where((n) => n['is_read'] == 0)
                 .length;
@@ -85,71 +107,117 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     }
   }
 
-  final List<Map<String, String>> dailyNews = [
-    {
-      "image":
-          "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=500",
-      "title": "Travaux Avenue Malik : Fin prévue vendredi",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1588880331179-bc9b93a8cb5e?q=80&w=500", 
-      "title": "Nouveau parc ouvert dans le quartier Sud",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=500",
-      "title": "Collecte de déchets : Nouveaux horaires",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=500",
-      "title": "Marché central : Extension des horaires d'ouverture",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=500",
-      "title": "Ecole primaire : Travaux de rénovation terminés",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=500",
-      "title": "Campagne de vaccination gratuite au centre de santé",
-    },
-    {
-      "image":
-          "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=500",
-      "title": "Rénovation des routes : Quartier ACI 2000 impacté",
-    },
-  ];
+  // --- WIDGETS DE LA SECTION NEWS ---
 
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUnreadCount();
-    _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
-      if (_currentPage < dailyNews.length - 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOutQuart,
-        );
-      }
-    });
+  Widget _buildNewsSection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Actualités du jour",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NewsScreen()),
+                  );
+                },
+                child: const Text(
+                  "Voir plus",
+                  style: TextStyle(
+                    color: Color(0xFF1A73B8),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 180,
+          child: _isLoadingNews
+              ? const Center(child: CircularProgressIndicator())
+              : _realNews.isEmpty
+              ? _buildEmptyNewsCard()
+              : PageView.builder(
+                  controller: _pageController,
+                  itemCount: _realNews.length,
+                  onPageChanged: (index) => _currentPage = index,
+                  itemBuilder: (context, index) {
+                    final news = _realNews[index];
+                    final imageUrl = "${AppConfig.baseUrl}${news['image_url']}";
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        image: DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                          onError: (err, stack) => const Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      child: _buildGradientOverlay(
+                        news['title'] ?? "Actualité",
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _pageController.dispose();
-    super.dispose();
+  Widget _buildEmptyNewsCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        image: const DecorationImage(
+          image: NetworkImage(
+            "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?q=80&w=500",
+          ),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: _buildGradientOverlay(
+        "Pas d'actualité aujourd'hui. Repassez plus tard !",
+      ),
+    );
   }
+
+  Widget _buildGradientOverlay(String title) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+        ),
+      ),
+      padding: const EdgeInsets.all(15),
+      alignment: Alignment.bottomLeft,
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  // --- RESTE DU UI ---
 
   @override
   Widget build(BuildContext context) {
@@ -205,10 +273,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "CityCare",
                     style: TextStyle(
                       color: Colors.white,
@@ -218,10 +286,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                   ),
                   Text(
                     "Espace Citoyen",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -235,10 +300,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                     onPressed: () =>
                         setState(() => isSearchExpanded = !isSearchExpanded),
                   ),
-                  // CORRECTION : On passe l'action dans le onTap
-                 _buildHeaderIcon(
+                  _buildHeaderIcon(
                     Icons.notifications_none_rounded,
-                    unreadNotificationsCount, // On utilise notre variable dynamique
+                    unreadNotificationsCount,
                     () => _showNotifications(),
                   ),
                   const SizedBox(width: 8),
@@ -251,30 +315,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
               ),
             ],
           ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Container(
-              margin: const EdgeInsets.only(top: 20),
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const TextField(
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: "Rechercher...",
-                  hintStyle: TextStyle(color: Colors.white60),
-                  border: InputBorder.none,
-                  icon: Icon(Icons.search, color: Colors.white70),
-                ),
-              ),
-            ),
-            crossFadeState: isSearchExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
-          ),
+          if (isSearchExpanded) _buildSearchBar(),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -310,13 +351,31 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     );
   }
 
-  // CORRECTION : Ajout du paramètre onTap
-  Widget _buildHeaderIcon(IconData icon, int unreadCount, VoidCallback onTap) {
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: const TextField(
+        style: TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: "Rechercher...",
+          hintStyle: TextStyle(color: Colors.white60),
+          border: InputBorder.none,
+          icon: Icon(Icons.search, color: Colors.white70),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderIcon(IconData icon, int count, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Stack(
-        clipBehavior:
-            Clip.none, // Permet au badge de déborder légèrement si besoin
+        clipBehavior: Clip.none,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -326,29 +385,24 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             ),
             child: Icon(icon, color: Colors.white, size: 22),
           ),
-          if (unreadCount > 0)
+          if (count > 0)
             Positioned(
-              right: -2, // Ajusté pour que le chiffre soit bien visible
+              right: -2,
               top: -2,
               child: Container(
-                padding: const EdgeInsets.all(4), // Espace autour du chiffre
-                constraints: const BoxConstraints(
-                  minWidth: 16, // Largeur minimale pour rester rond
-                  minHeight: 16,
-                ),
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: const Color(0xFF1A73B8),
                     width: 1.5,
-                  ), // Rappel de ta couleur primaire
+                  ),
                 ),
                 child: Center(
                   child: Text(
-                    unreadCount > 9
-                        ? '9+'
-                        : '$unreadCount', // Affiche 9+ si trop de messages
+                    count > 9 ? '9+' : '$count',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 9,
@@ -360,82 +414,6 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildNewsSection() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Actualités du jour",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const NewsScreen()),
-                  );
-                },
-                child: const Text(
-                  "Voir plus",
-                  style: TextStyle(
-                    color: Color(0xFF1A73B8),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 180,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: dailyNews.length,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  image: DecorationImage(
-                    image: NetworkImage(dailyNews[index]["image"]!),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.8),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(15),
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    dailyNews[index]["title"]!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 
@@ -509,26 +487,19 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     );
   }
 
+  // --- SIGNALEMENTS RECENTS ---
+
   Future<List<dynamic>> _fetchMyRecentReports() async {
-    // On utilise la route qui marche (celle de l'admin)
-    final url = "${AppConfig.baseUrl}/api/signalements";
-
-    final response = await http.get(Uri.parse(url));
-
+    final response = await http.get(
+      Uri.parse("${AppConfig.baseUrl}/api/signalements"),
+    );
     if (response.statusCode == 200) {
       List allData = jsonDecode(response.body);
-
-      // On filtre manuellement pour ne garder que les rapports de Kadi
-      // ATTENTION: Vérifie bien si c'est 'user_id' ou 'userId' dans ton JSON
-      List kadiReports = allData
+      return allData
           .where((r) => r['user_id'].toString() == widget.user.id.toString())
           .toList();
-
-      return kadiReports;
-    } else {
-      print("Erreur: ${response.statusCode}");
-      return [];
     }
+    return [];
   }
 
   Widget _buildMyReportsHeader() {
@@ -542,19 +513,12 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           TextButton(
-           onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MyReportsScreen(user: widget.user),
-                ),
-              ).then((value) {
-                // Cette partie s'exécute quand on revient sur l'accueil
-                setState(() {
-                  // Cela va relancer le FutureBuilder des 5 récents
-                });
-              });
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MyReportsScreen(user: widget.user),
+              ),
+            ).then((_) => setState(() {})),
             child: const Text("Voir tout"),
           ),
         ],
@@ -566,46 +530,31 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     return FutureBuilder<List<dynamic>>(
       future: _fetchMyRecentReports(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting)
           return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty)
           return const Center(child: Text("Aucun signalement."));
-        }
-
         final reports = snapshot.data!;
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: reports.length,
+          itemCount: reports.length > 3
+              ? 3
+              : reports.length, // On en affiche max 3 sur l'accueil
           itemBuilder: (context, index) {
             final report = reports[index];
-
-            // Intelligence ici :
-            IconData icon = _getIconForType(report['type_signalement'] ?? "");
-            String timeAgo = _formatTimeAgo(report['date_signalement']);
-
-            // Gestion des couleurs de statut
-            Color statusColor;
-            switch (report['statut']) {
-              case 'resolu':
-                statusColor = Colors.green;
-                break;
-              case 'en_cours':
-                statusColor = Colors.orange;
-                break;
-              default:
-                statusColor = Colors.blueGrey;
-            }
-
             return _buildModernReportCard(
               report['titre'],
               report['lieu'],
               report['statut'],
-              statusColor,
-              icon,
-              timeAgo, // On passe notre "Il y a..."
+              report['statut'] == 'resolu'
+                  ? Colors.green
+                  : (report['statut'] == 'en_cours'
+                        ? Colors.orange
+                        : Colors.blueGrey),
+              _getIconForType(report['type_signalement'] ?? ""),
+              _formatTimeAgo(report['date_signalement']),
             );
           },
         );
@@ -667,7 +616,8 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     );
   }
 
-  // CORRECTION : On utilise widget.user directement, pas besoin de passerUserModel en paramètre
+  // --- MODALS ET NAVIGATION ---
+
   void _showProfileModal() {
     showModalBottomSheet(
       context: context,
@@ -705,48 +655,43 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             ),
             Text(widget.user.email, style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 30),
-            const Text(
-              "Mon Espace Citoyen",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F4C75),
-              ),
-            ),
-            const Divider(),
-           _buildSettingsTile(Icons.person_outline, "Mon Profil", () {
-              Navigator.push(
+            _buildSettingsTile(
+              Icons.person_outline,
+              "Mon Profil",
+              () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ProfileDetailScreen(user: widget.user),
                 ),
-              );
-            }),
-            _buildSettingsTile(Icons.history, "Mes Signalements", () {
-              Navigator.push(
+              ),
+            ),
+            _buildSettingsTile(
+              Icons.history,
+              "Mes Signalements",
+              () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => MyReportsScreen(user: widget.user),
                 ),
-              );
-            }),
-            _buildSettingsTile(Icons.help_outline, "Centre d'aide", () {
-              Navigator.push(
+              ),
+            ),
+            _buildSettingsTile(
+              Icons.help_outline,
+              "Centre d'aide",
+              () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const HelpCenterScreen(),
                 ),
-              );
-            }),
-            const SizedBox(height: 10),
-            // CORRECTION : Suppression du paramètre 'color' inexistant dans _buildSettingsTile
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text(
                 "Déconnexion",
                 style: TextStyle(
                   color: Colors.red,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               onTap: () => _handleLogout(context),
@@ -761,20 +706,17 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   void _handleLogout(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+      (route) => false,
     );
   }
 
- void _showNotifications() {
+  void _showNotifications() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => NotificationsScreen(currentUser: widget.user),
       ),
-    ).then((_) {
-      // Cette partie s'exécute quand on revient en arrière
-      _fetchUnreadCount();
-    });
+    ).then((_) => _fetchUnreadCount());
   }
 
   Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap) {
@@ -784,5 +726,23 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
+  }
+
+  // --- HELPERS ---
+
+  IconData _getIconForType(String type) {
+    if (type.contains('échets')) return Icons.delete_outline;
+    if (type.contains('eau')) return Icons.water_drop;
+    if (type.contains('électri')) return Icons.lightbulb_outline;
+    if (type.contains('route')) return Icons.add_road;
+    return Icons.report_problem_outlined;
+  }
+
+  String _formatTimeAgo(String dateStr) {
+    DateTime date = DateTime.parse(dateStr).toLocal();
+    Duration diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return "Il y a ${diff.inMinutes} min";
+    if (diff.inHours < 24) return "Il y a ${diff.inHours} h";
+    return "${date.day}/${date.month}/${date.year}";
   }
 }

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:citycare_mobile/config.dart';
 import 'package:citycare_mobile/models/user_model.dart';
 import 'package:citycare_mobile/screens/admin_reports_screen.dart';
 import 'package:citycare_mobile/screens/manage_news_screen.dart';
+import 'package:citycare_mobile/screens/user_management_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -64,10 +66,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   @override
-@override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFD), // Un gris bleuté très clair et propre
+      backgroundColor: const Color(
+        0xFFF8FAFD,
+      ), // Un gris bleuté très clair et propre
       body: Column(
         children: [
           // --- HEADER ADMIN PREMIUM ---
@@ -167,9 +170,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       ),
                     ),
                   ],
-                ),                
+                ),
                 const SizedBox(height: 15),
-                
               ],
             ),
           ),
@@ -541,6 +543,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             MaterialPageRoute(builder: (context) => ManageNewsScreen()),
           );
         }
+        if (title == "Utilisateurs") {
+          _showSecurePinGate(context);
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(15),
@@ -578,4 +583,308 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
+
+  void _showSecurePinGate(BuildContext context) {
+    int attempts = 0;
+    bool isLocked = false;
+    int secondsRemaining = 30;
+    Timer? lockTimer;
+    final controller = TextEditingController();
+    
+    // On capture le Navigator ici pour qu'il reste stable
+    final rootNavigator = Navigator.of(context);
+
+    // Couleurs de la charte CityCare
+    const primaryColor = Color(0xFF1B262C); // Dark Navy
+    const accentColor = Color(0xFF0F4C75); // Deep Blue
+    const dangerColor = Color(0xFFE74C3C); // Soft Red
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setModalState) {
+          void verifyPin(String pin) {
+            if (pin.length == 4) {
+              if (pin == "2026") {
+                Navigator.pop(context); // Ferme le dialogue PIN
+
+                _showStatusModal(
+                  context,
+                  isSuccess: true,
+                  onFinished: () {
+                    // Utilisation de rootNavigator pour la redirection
+                    rootNavigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => UserManagementScreen(),
+                      ),
+                    );
+                  },
+                );
+              } else {
+                attempts++;
+                controller.clear();
+                if (attempts >= 3) {
+                  setModalState(() {
+                    isLocked = true;
+                    secondsRemaining = 30;
+                  });
+
+                  lockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                    setModalState(() {
+                      if (secondsRemaining > 0) {
+                        secondsRemaining--;
+                      } else {
+                        isLocked = false;
+                        attempts = 0;
+                        timer.cancel();
+                      }
+                    });
+                  });
+                } else {
+                  _showStatusModal(context, isSuccess: false);
+                }
+              }
+            }
+          }
+
+          return PopScope(
+            canPop: !isLocked,
+            child: AlertDialog(
+              backgroundColor: Colors.white,
+              elevation: 20,
+              shadowColor: Colors.black45,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              contentPadding: EdgeInsets.zero,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 30),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isLocked
+                            ? [dangerColor, const Color(0xFFC0392B)]
+                            : [primaryColor, accentColor],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(25),
+                        topRight: Radius.circular(25),
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isLocked
+                              ? Icons.lock_clock_rounded
+                              : Icons.admin_panel_settings_rounded,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(25),
+                    child: Column(
+                      children: [
+                        Text(
+                          isLocked ? "SÉCURITÉ ACTIVÉE" : "ESPACE ADMINISTRATION",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            letterSpacing: 1.5,
+                            color: primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          isLocked
+                              ? "Trop de tentatives. Veuillez patienter."
+                              : "Veuillez saisir votre code d'accès.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        if (isLocked) ...[
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                height: 80,
+                                width: 80,
+                                child: CircularProgressIndicator(
+                                  value: secondsRemaining / 30,
+                                  strokeWidth: 8,
+                                  color: dangerColor,
+                                  backgroundColor: dangerColor.withOpacity(0.1),
+                                ),
+                              ),
+                              Text(
+                                "$secondsRemaining",
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: dangerColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Container(
+                            width: 180,
+                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F7F6),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
+                            child: TextField(
+                              controller: controller,
+                              obscureText: true,
+                              autofocus: true,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              maxLength: 4,
+                              onChanged: verifyPin,
+                              style: const TextStyle(
+                                fontSize: 32,
+                                letterSpacing: 20,
+                                fontWeight: FontWeight.bold,
+                                color: accentColor,
+                              ),
+                              decoration: const InputDecoration(
+                                counterText: "",
+                                border: InputBorder.none,
+                                hintText: "****",
+                                hintStyle: TextStyle(color: Colors.black12),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 30),
+                        if (!isLocked)
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                "RETOUR",
+                                style: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showStatusModal(
+    BuildContext context, {
+    required bool isSuccess,
+    VoidCallback? onFinished,
+  }) {
+    const primaryColor = Color(0xFF1B262C);
+    const successColor = Color(0xFF27AE60);
+    const dangerColor = Color(0xFFE74C3C);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (modalContext) {
+        Future.delayed(const Duration(milliseconds: 1600), () {
+          if (Navigator.canPop(modalContext)) {
+            Navigator.pop(modalContext);
+            if (onFinished != null) {
+              // On lance le callback juste après la fermeture
+              Future.microtask(() => onFinished());
+            }
+          }
+        });
+
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 40),
+              margin: const EdgeInsets.symmetric(horizontal: 50),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: (isSuccess ? successColor : dangerColor).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isSuccess ? Icons.check_circle_rounded : Icons.gpp_bad_rounded,
+                      color: isSuccess ? successColor : dangerColor,
+                      size: 65,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    isSuccess ? "ACCÈS AUTORISÉ" : "CODE INCORRECT",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isSuccess ? "Bienvenue dans l'espace gestion" : "Veuillez réessayer",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 }

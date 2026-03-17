@@ -307,30 +307,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         /// LIEN REGISTER
                         Row(
-                           mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              "Pas encore membre ?",
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                            Flexible(
+                              // Ajoute ceci pour que le texte puisse passer à la ligne si besoin
+                              child: Text(
+                                "Pas encore membre ?",
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             TextButton(
                               onPressed: () =>
-                                  Navigator.pushNamed(context, "/register"),
-                              child: Text(
-                                "Créer un compte",
-                                style: TextStyle(
-                                  color: Colors
-                                      .white, // Blanc brillant pour le lien
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
+                                  Navigator.pushNamed(context, '/register'),
+                              child: Text("Créer un compte"),
                             ),
                           ],
-                        ),
+                        )
                       ],
                     ),
                   ),
