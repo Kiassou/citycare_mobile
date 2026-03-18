@@ -1,4 +1,4 @@
-import 'dart:ui'; // Obligatoire pour BackdropFilter
+import 'dart:ui';
 import 'package:citycare_mobile/config.dart';
 import 'package:citycare_mobile/models/user_model.dart';
 import 'package:citycare_mobile/screens/citizen_home_screen.dart';
@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// On transforme en StatefulWidget pour gérer l'état du bouton et du chargement
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -16,20 +15,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  // Variables d'état
-  bool _isLoading = false; // Pour afficher le spinner
-  bool _isButtonEnabled = false; // Pour activer le bouton
+  bool _isLoading = false;
+  bool _isButtonEnabled = false;
+  bool _isPasswordVisible = false;
 
-  // Couleurs CityCare
   final Color primaryBlue = const Color(0xFF1A73B8);
   final Color secondaryGreen = const Color(0xFF4A7C32);
 
   @override
   void initState() {
     super.initState();
-    // Ecouter les changements dans les champs pour activer le bouton
     usernameController.addListener(_validateForm);
     passwordController.addListener(_validateForm);
+    _isPasswordVisible = false;
   }
 
   @override
@@ -39,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Vérifie si les deux champs sont remplis
   void _validateForm() {
     setState(() {
       _isButtonEnabled =
@@ -48,13 +45,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  // Fonction de connexion
   Future<void> _handleLogin() async {
     if (!_isButtonEnabled || _isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     var url = Uri.parse('${AppConfig.baseUrl}/api/auth/login');
 
@@ -76,15 +70,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final user = UserModel.fromJson(data["user"]);
 
         if (user.role == "admin") {
-          // Option A : Si tu as défini la route dans main.dart
           Navigator.pushReplacementNamed(
             context,
             "/admin_home",
             arguments: user,
           );
-
-          // Option B (Plus sûre pour le test) : Navigation directe
-          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminHomeScreen(user: user)));
         } else {
           Navigator.pushReplacement(
             context,
@@ -93,31 +83,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
-      }
-      // --- NOUVEAU : Gestion des erreurs envoyées par le serveur ---
-      else {
-        // On récupère le message d'erreur envoyé par ton API (ex: data['message'])
-        // Sinon on affiche un message par défaut selon le code HTTP
+      } else {
         String errorMsg = data["message"] ?? "Erreur d'authentification";
-
-        if (response.statusCode == 401) {
+        if (response.statusCode == 401)
           errorMsg = "Mot de passe incorrect";
-        } else if (response.statusCode == 404) {
+        else if (response.statusCode == 404)
           errorMsg = "Utilisateur introuvable";
-        }
 
         _showErrorSnackBar(errorMsg);
       }
-      // -----------------------------------------------------------
     } catch (e) {
       print("ERREUR CONNEXION: $e");
       _showErrorSnackBar("Impossible de joindre le serveur.");
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -127,19 +106,22 @@ class _LoginScreenState extends State<LoginScreen> {
         content: Text(message),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Scaffold(
-      // Pour éviter que le clavier ne pousse tout le contenu de manière moche
       resizeToAvoidBottomInset: false,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // 1. Image de fond NETTE (Même que le Splash pour la cohérence)
+          // 1. IMAGE NETTE EN FOND (PAS DE FLou)
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -148,184 +130,203 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Overlay sombre pour le contraste
-          Container(color: Colors.black.withOpacity(0.3)),
 
-          // 2. Contenu (Carte transparente)
+          // 2. CARTE TRANSPARENTE CITYCARE (Glassmorphism)
           Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: ClipRRect(
-                // Obligatoire pour limiter le flou à la carte
-                borderRadius: BorderRadius.circular(30),
-                child: BackdropFilter(
-                  // L'effet de verre dépoli (Glassmorphism)
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      // Couleur blanche TRÈS transparente
-                      color: Colors.white.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1.5,
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: isTablet ? 80 : 35,
+                vertical: 60,
+              ),
+              width: double.infinity,
+              constraints: BoxConstraints(maxWidth: isTablet ? 450 : 380),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.15),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(35),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(35, isTablet ? 50 : 40, 35, 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+
+                    /// TITRE GRADIENT BLEU
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF1A73B8), Color(0xFF0F4C75)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        "Bienvenue sur CityCare",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                          height: 1.2,
+                        ),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 10),
 
-                        Text(
-                          "Bienvenue sur CityCare",
+                    const SizedBox(height: 12),
 
-                          textAlign: TextAlign.center,
+                    /// DESCRIPTION
+                    Text(
+                      "Connectez-vous pour signaler les incidents\net contribuer à une ville plus sûre",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                        height: 1.5,
+                      ),
+                    ),
 
+                    const SizedBox(height: 30),
+
+                    /// USERNAME FIELD
+                    _buildGlassTextField(
+                      controller: usernameController,
+                      hint: "Nom d'utilisateur",
+                      icon: Icons.person_outline_rounded,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// PASSWORD FIELD
+                    _buildGlassTextField(
+                      controller: passwordController,
+                      hint: "Mot de passe",
+                      icon: Icons.lock_outline_rounded,
+                      isPassword: true, // Active l'icône œil
+                    ),
+
+                    /// OUBLI MOT DE PASSE
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, "/forgot"),
+                        child: Text(
+                          "Mot de passe oublié ?",
                           style: TextStyle(
-                            fontSize: 25,
-
-                            fontWeight: FontWeight.bold,
-
-                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.95),
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        const Text(
-                          "Connectez-vous pour signaler un incident",
+                      ),
+                    ),
 
-                          style: TextStyle(color: Color.fromARGB(255, 218, 217, 217), fontSize: 14),
-                        ),
-                        const SizedBox(height: 40),
+                    const SizedBox(height: 30),
 
-                        /// CHAMP USERNAME CHIC (Transparent)
-                        _buildTransparentTextField(
-                          controller: usernameController,
-                          hint: "Nom d'utilisateur",
-                          icon: Icons.person_outline,
-                        ),
-                        const SizedBox(height: 20),
-
-                        /// CHAMP PASSWORD CHIC (Transparent)
-                        _buildTransparentTextField(
-                          controller: passwordController,
-                          hint: "Mot de passe",
-                          icon: Icons.lock_outline,
-                          isPassword: true,
-                        ),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () =>
-                                Navigator.pushNamed(context, "/forgot"),
-                            child: Text(
-                              "Mot de passe oublié ?",
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w400,
-                                fontSize: 13,
+                    /// BOUTON LOGIN ANIMÉ
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: double.infinity,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: _isButtonEnabled && !_isLoading
+                            ? const LinearGradient(
+                                colors: [Color(0xFF1A73B8), Color(0xFF0F4C75)],
+                              )
+                            : LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.2),
+                                  Colors.white.withOpacity(0.1),
+                                ],
                               ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-
-                        /// BOUTON CONNEXION CHIC ET DYNAMIQUE
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: double.infinity,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            // Dégradé désactivé si pas cliquable
-                            gradient: _isButtonEnabled && !_isLoading
-                                ? LinearGradient(
-                                    colors: [
-                                      primaryBlue,
-                                      const Color(0xFF12568A),
-                                    ],
-                                  )
-                                : LinearGradient(
-                                    colors: [
-                                      Colors.grey.withOpacity(0.5),
-                                      Colors.grey.withOpacity(0.5),
-                                    ],
-                                  ),
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: _isButtonEnabled && !_isLoading
-                                ? [
-                                    BoxShadow(
-                                      color: primaryBlue.withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 5),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                            // La logique cliquable est ici
-                            onPressed: (_isButtonEnabled && !_isLoading)
-                                ? _handleLogin
-                                : null,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: _isButtonEnabled && !_isLoading
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF1A73B8,
+                                  ).withOpacity(0.4),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _isButtonEnabled && !_isLoading
+                              ? _handleLogin
+                              : null,
+                          child: Center(
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    // Spinner Chic et fin
+                                    height: 25,
+                                    width: 25,
                                     child: CircularProgressIndicator(
                                       color: Colors.white,
-                                      strokeWidth: 2,
+                                      strokeWidth: 2.5,
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     "SE CONNECTER",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
                                       letterSpacing: 1.5,
                                     ),
                                   ),
                           ),
                         ),
+                      ),
+                    ),
 
-                        const SizedBox(height: 20),
+                    const SizedBox(height: 35),
 
-                        /// LIEN REGISTER
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              // Ajoute ceci pour que le texte puisse passer à la ligne si besoin
-                              child: Text(
-                                "Pas encore membre ?",
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    /// REGISTER
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Pas encore membre ? ",
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white.withOpacity(0.85),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/register'),
+                          child: const Text(
+                            "Créer un compte",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A73B8),
                             ),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pushNamed(context, '/register'),
-                              child: Text("Créer un compte"),
-                            ),
-                          ],
-                        )
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -335,45 +336,85 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper pour construire les champs de texte transparents 'Chic'
-  Widget _buildTransparentTextField({
+ Widget _buildGlassTextField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
     bool isPassword = false,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      style: const TextStyle(color: Colors.white), // Texte saisi en blanc
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.6),
-          fontSize: 14,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.2),
+            Colors.white.withOpacity(0.05),
+          ],
         ),
-        prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
-        filled: true,
-        fillColor: Colors.white.withOpacity(
-          0.1,
-        ), // Fond du champ très légèrement blanc
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.15),
-          ), // Bordure subtile
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword ? !_isPasswordVisible : false,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.4),
-            width: 1.5,
-          ), // Plus visible au focus
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.65),
+            fontSize: 16,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: Colors.white.withOpacity(0.85),
+            size: 24,
+          ),
+          // ICÔNE ŒIL TOGGLE
+          suffixIcon: isPassword
+              ? GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.2),
+                          Colors.white.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 22,
+                    ),
+                  ),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 22,
+            horizontal: 10,
+          ),
+          isDense: true,
         ),
       ),
     );

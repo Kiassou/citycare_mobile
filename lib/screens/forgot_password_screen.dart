@@ -21,12 +21,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.initState();
     emailController.addListener(() {
       setState(() {
-        // Validation basique d'email pour activer le bouton
         _isButtonEnabled =
             emailController.text.contains('@') &&
             emailController.text.contains('.');
       });
     });
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
   }
 
   Future<void> _handleResetPassword() async {
@@ -46,8 +51,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       var data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        _showSnackBar("Lien envoyé ! Vérifiez votre boîte mail.", Colors.green);
-        // Retour automatique au login après 2 secondes
+        _showSnackBar(
+          "Lien de réinitialisation envoyé ! Vérifiez votre boîte mail.",
+          Colors.green,
+        );
         Future.delayed(
           const Duration(seconds: 2),
           () => Navigator.pop(context),
@@ -71,16 +78,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         content: Text(msg),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Fond Image NETTE
+          // 1. IMAGE NETTE EN FOND
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -89,137 +102,228 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
           ),
-          // Overlay
-          Container(color: Colors.black.withOpacity(0.3)),
 
+          // 2. CARTE TRANSPARENTE CITYCARE
           Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                  child: Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: isTablet ? 80 : 35,
+                vertical: 60,
+              ),
+              width: double.infinity,
+              constraints: BoxConstraints(maxWidth: isTablet ? 450 : 380),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.15),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(35),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  isTablet ? 50 : 35,
+                  isTablet ? 50 : 40,
+                  isTablet ? 50 : 35,
+                  isTablet ? 40 : 35,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+
+                    const SizedBox(height: 25),
+
+                    /// TITRE GRADIENT
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [primaryBlue, const Color(0xFF0F4C75)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        "Récupération Mot de Passe",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.lock_reset,
-                          size: 60,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                        const SizedBox(height: 15),
-                        const Text(
-                          "Récupération",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Entrez votre email pour recevoir un lien de réinitialisation.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
 
-                        // Champ Email Transparent
-                        TextField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: "Votre adresse email",
-                            hintStyle: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.email_outlined,
-                              color: Colors.white70,
-                            ),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.05),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 25),
+                    const SizedBox(height: 12),
 
-                        // Bouton Envoyer
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: double.infinity,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            gradient: _isButtonEnabled && !_isLoading
-                                ? LinearGradient(
-                                    colors: [
-                                      primaryBlue,
-                                      const Color(0xFF12568A),
-                                    ],
-                                  )
-                                : LinearGradient(
-                                    colors: [
-                                      Colors.white.withOpacity(0.1),
-                                      Colors.white.withOpacity(0.1),
-                                    ],
-                                  ),
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                            ),
-                            onPressed: (_isButtonEnabled && !_isLoading)
-                                ? _handleResetPassword
-                                : null,
+                    /// DESCRIPTION
+                    Text(
+                      "Entrez votre adresse email pour recevoir\nun lien de réinitialisation sécurisé",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    /// CHAMP EMAIL COMPACT
+                    _buildCompactGlassField(
+                      controller: emailController,
+                      hint: "Votre adresse email",
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+
+                    const SizedBox(height: 35),
+
+                    /// BOUTON ENVOYER
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: _isButtonEnabled && !_isLoading
+                            ? LinearGradient(
+                                colors: [primaryBlue, const Color(0xFF0F4C75)],
+                              )
+                            : LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.white.withOpacity(0.08),
+                                ],
+                              ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: _isButtonEnabled && !_isLoading
+                            ? [
+                                BoxShadow(
+                                  color: primaryBlue.withOpacity(0.4),
+                                  blurRadius: 22,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _isButtonEnabled && !_isLoading
+                              ? _handleResetPassword
+                              : null,
+                          child: Center(
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
+                                    height: 26,
+                                    width: 26,
                                     child: CircularProgressIndicator(
                                       color: Colors.white,
-                                      strokeWidth: 2,
+                                      strokeWidth: 2.8,
                                     ),
                                   )
                                 : const Text(
                                     "ENVOYER LE LIEN",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.3,
                                     ),
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            "Retour à la connexion",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 30),
+
+                    /// RETOUR LOGIN
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        "← Retour à la connexion",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A73B8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// CHAMP COMPACT EMAIL
+  Widget _buildCompactGlassField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.2),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 15,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: Colors.white.withOpacity(0.85),
+            size: 22,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 20,
+            horizontal: 10,
+          ),
+          isDense: true,
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:citycare_mobile/config.dart';
 import 'package:citycare_mobile/models/user_model.dart';
 import 'package:citycare_mobile/screens/admin_reports_screen.dart';
+import 'package:citycare_mobile/screens/app_statistics_screen.dart';
 import 'package:citycare_mobile/screens/manage_news_screen.dart';
 import 'package:citycare_mobile/screens/user_management_screen.dart';
 import 'package:flutter/material.dart';
@@ -290,10 +291,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                               _buildMenuCard(
                                 context,
-                                "Maintenance",
-                                Icons.build_circle_rounded,
-                                Colors.blueGrey,
-                                "Système",
+                                "Statistiques",
+                                Icons.analytics_rounded, 
+                                Colors.blueGrey, 
+                                "Analyses Globales",
                               ),
                             ],
                           ),
@@ -546,6 +547,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         if (title == "Utilisateurs") {
           _showSecurePinGate(context);
         }
+        if (title == "Statistiques") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AppStatisticsScreen()),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(15),
@@ -588,6 +595,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     int attempts = 0;
     bool isLocked = false;
     int secondsRemaining = 30;
+    // ignore: unused_local_variable
     Timer? lockTimer;
     final controller = TextEditingController();
     

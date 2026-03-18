@@ -12,30 +12,42 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  double _progressValue = 0.0;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialisation des animations
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2200),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutBack,
+          ),
         );
+
+    // Animation de progression
+    Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (mounted && _progressValue < 1.0) {
+        setState(() {
+          _progressValue += 0.015;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
 
     _animationController.forward();
 
-    // Même logique de timer - inchangée
     Timer(const Duration(seconds: 5), () {
       if (mounted) {
         Navigator.pushReplacementNamed(context, "/login");
@@ -51,12 +63,16 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // 1. Image de fond
+          // 1. IMAGE NETTE CityCare
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: AssetImage("assets/images/citycare.png"),
                 fit: BoxFit.cover,
@@ -64,50 +80,35 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // 2. Overlay dégradé amélioré
+          // 2. OVERLAY DÉGRADÉ CityCare
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.3),
-                  const Color(0xFF1A73B8).withOpacity(0.6),
-                  const Color(0xFF4A7C32).withOpacity(0.7),
-                  Colors.black.withOpacity(0.4),
+                  Colors.transparent,
+                  const Color(0xFF1A73B8).withOpacity(0.4),
+                  const Color(0xFF4A7C32).withOpacity(0.3),
+                  Colors.black.withOpacity(0.5),
                 ],
-                stops: const [0.0, 0.4, 0.7, 1.0],
+                stops: const [0.0, 0.3, 0.6, 1.0],
               ),
             ),
           ),
 
-          // 3. Éléments décoratifs (cercles lumineux)
+          // 3. ÉLÉMENTS DÉCORATIFS
           Positioned(
-            top: -100,
-            left: -100,
+            top: -80,
+            left: -80,
             child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [Colors.white.withOpacity(0.1), Colors.transparent],
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: -150,
-            right: -150,
-            child: Container(
-              width: 400,
-              height: 400,
+              width: 250,
+              height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF1A73B8).withOpacity(0.2),
+                    const Color(0xFF1A73B8).withOpacity(0.15),
                     Colors.transparent,
                   ],
                 ),
@@ -115,105 +116,179 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // 4. Contenu Central
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 350),
-
-                // 6. Spinner Horizontal Minimaliste Amélioré
-                SlideTransition(
-                  position: _slideAnimation,
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
+          // 4. CARTE EN BAS (pas au centre)
+          Positioned(
+            bottom: isTablet ? 80 : 60, // Distance du bas
+            left: 0,
+            right: 0,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Center(
+                  child: Container(
+                    margin: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 100 : 60,
+                    ),
+                    constraints: BoxConstraints(maxWidth: isTablet ? 500 : 380),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.18),
+                          Colors.white.withOpacity(0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 40,
+                          offset: const Offset(0, 20),
+                        ),
+                      ],
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 60),
+                      padding: EdgeInsets.fromLTRB(
+                        isTablet ? 50 : 35,
+                        isTablet ? 40 : 30, // Padding haut réduit
+                        isTablet ? 50 : 35,
+                        isTablet ? 35 : 25, // Padding bas réduit
+                      ),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Container avec effet glassmorphism
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
+
+                          // TITRE PRINCIPAL
+                          
+
+                          const SizedBox(height: 5),
+
+                          // SLAGAN
+                          Text(
+                            "Prenons soin de notre ville ensemble",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white.withOpacity(0.95),
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                              height: 1.4,
+                            ),
+                          ),
+
+                          const SizedBox(height: 15),
+
+                          // PROGRESS BAR ANIMÉE
+                          Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                height: 6,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(15),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.3),
+                                      Colors.white.withOpacity(0.1),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: Colors.white.withOpacity(0.2),
-                                    width: 1,
                                   ),
                                 ),
-                                child: Column(
-                                  children: [
-                                    // LinearProgressIndicator avec container personnalisé
-                                    Container(
-                                      width: double.infinity,
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Stack(
+                                    children: [
+                                      // Fond de progression
+                                      LinearProgressIndicator(
+                                        value: _progressValue,
+                                        backgroundColor: Colors.transparent,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF1A73B8),
+                                            ),
+                                        minHeight: 6,
                                       ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
+                                      // Overlay dégradé
+                                      ShaderMask(
+                                        shaderCallback: (bounds) =>
+                                            LinearGradient(
+                                              colors: [
+                                                const Color(0xFF1A73B8),
+                                                const Color(0xFF4A7C32),
+                                              ],
+                                            ).createShader(bounds),
+                                        blendMode: BlendMode.srcATop,
                                         child: LinearProgressIndicator(
+                                          value: _progressValue,
                                           backgroundColor: Colors.transparent,
                                           valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                          minHeight: 4,
+                                              const AlwaysStoppedAnimation<
+                                                Color
+                                              >(Colors.white),
+                                          minHeight: 6,
                                         ),
                                       ),
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    Text(
-                                      "Prenons soin de notre ville",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        letterSpacing: 2,
-                                        fontWeight: FontWeight.w400,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(
-                                              0.5,
-                                            ),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 8),
-
-                                    Text(
-                                      "Chargement de votre environnement...",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontSize: 12,
-                                        letterSpacing: 1,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+
+                              const SizedBox(height: 10),
+
+                              // TEXTES DYNAMIQUES
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Chargement",
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "${(_progressValue * 100).toInt()}%",
+                                    style: TextStyle(
+                                      color: const Color(0xFF1A73B8),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              Text(
+                                "Initialisation de votre environnement CityCare...",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],

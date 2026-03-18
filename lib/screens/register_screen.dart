@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:citycare_mobile/config.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -21,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // États
   bool _isLoading = false;
   bool _isButtonEnabled = false;
+  bool _isPasswordVisible = false; // Pour l'icône œil
 
   // Couleurs CityCare
   final Color primaryBlue = const Color(0xFF1A73B8);
@@ -29,7 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Ecoute de tous les champs pour valider le formulaire
     List<TextEditingController> controllers = [
       nomController,
       prenomController,
@@ -45,8 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _validateForm() {
     setState(() {
-      _isButtonEnabled =
-          nomController.text.isNotEmpty &&
+      _isButtonEnabled = nomController.text.isNotEmpty &&
           prenomController.text.isNotEmpty &&
           usernameController.text.isNotEmpty &&
           telController.text.isNotEmpty &&
@@ -79,18 +77,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       var data = jsonDecode(response.body);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        // Message de succès chic
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text("Inscription réussie ! Connectez-vous."),
             backgroundColor: secondaryGreen,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           ),
         );
-        // RETOUR AU LOGIN
-        Future.delayed(const Duration(seconds: 2), () {
-          Navigator.pop(context);
-        });
+        Future.delayed(const Duration(seconds: 2), () => Navigator.pop(context));
       } else {
         _showError(data["message"] ?? "Erreur lors de l'inscription");
       }
@@ -107,16 +102,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
         content: Text(msg),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // 1. Fond Image NET
+          // 1. IMAGE NETTE EN FOND
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -125,188 +126,204 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          // Overlay dégradé doux
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.2),
+
+          // 2. CARTE COMPLÈTE AVEC HEADER À L'INTÉRIEUR
+          Center(
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: isTablet ? 80 : 35,
+                vertical: 40,
+              ),
+              width: double.infinity,
+              constraints: BoxConstraints(maxWidth: isTablet ? 500 : 380),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.15),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(35),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, 20),
+                  ),
                 ],
               ),
-            ),
-          ),
-
-          // 2. Contenu
-          SafeArea(
-            child: Column(
-              children: [
-                // Header "Chic & Douce"
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Column(
-                    children: [
-                      Text(
-                        "CITYCARE",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3,
-                          shadows: [Shadow(color: primaryBlue, blurRadius: 10)],
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      const Text(
-                        "Créer un profil citoyen",
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  isTablet ? 50 : 30,
+                  isTablet ? 50 : 35,
+                  isTablet ? 50 : 30,
+                  isTablet ? 35 : 30,
                 ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// HEADER DANS LA CARTE
+                    
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF1A73B8), Color(0xFF0F4C75)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        "Rejoignez CityCare",
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
 
-                // Carte Inscription
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                        child: Container(
-                          padding: const EdgeInsets.all(25),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildChicField(
-                                nomController,
-                                "Nom",
-                                Icons.person_outline,
-                              ),
-                              _buildChicField(
-                                prenomController,
-                                "Prénom",
-                                Icons.person_outline,
-                              ),
-                              _buildChicField(
-                                usernameController,
-                                "Username",
-                                Icons.alternate_email,
-                              ),
-                              _buildChicField(
-                                telController,
-                                "Téléphone",
-                                Icons.phone_android,
-                                type: TextInputType.phone,
-                              ),
-                              _buildChicField(
-                                emailController,
-                                "Email",
-                                Icons.email_outlined,
-                                type: TextInputType.emailAddress,
-                              ),
-                              _buildChicField(
-                                passwordController,
-                                "Mot de passe",
-                                Icons.lock_outline,
-                                isPass: true,
-                              ),
+                    Text(
+                      "Créez votre profil citoyen",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
 
-                              const SizedBox(height: 25),
+                    const SizedBox(height: 15),
 
-                              // Bouton Dynamique
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: double.infinity,
-                                height: 55,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  gradient: _isButtonEnabled && !_isLoading
-                                      ? LinearGradient(
-                                          colors: [
-                                            secondaryGreen,
-                                            const Color(0xFF356324),
-                                          ],
-                                        )
-                                      : LinearGradient(
-                                          colors: [
-                                            Colors.white.withOpacity(0.1),
-                                            Colors.white.withOpacity(0.1),
-                                          ],
-                                        ),
-                                  boxShadow: _isButtonEnabled && !_isLoading
-                                      ? [
-                                          BoxShadow(
-                                            color: secondaryGreen.withOpacity(
-                                              0.4,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ]
-                                      : [],
+                    _buildCompactGlassField(
+                      controller: nomController,
+                      hint: "Nom",
+                      icon: Icons.person_outline_rounded,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildCompactGlassField(
+                      controller: prenomController,
+                      hint: "Prénom",
+                      icon: Icons.person_outline_rounded,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildCompactGlassField(
+                      controller: usernameController,
+                      hint: "Nom d'utilisateur",
+                      icon: Icons.alternate_email_rounded,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildCompactGlassField(
+                      controller: telController,
+                      hint: "+223 XX XX XX XX",
+                      icon: Icons.phone_android_rounded,
+                      keyboardType: TextInputType.phone,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildCompactGlassField(
+                      controller: emailController,
+                      hint: "example@citycare.ml",
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    /// PASSWORD COMPACT
+                    _buildCompactPasswordField(
+                      controller: passwordController,
+                      hint: "Mot de passe",
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    /// BOUTON INSCRIPTION
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: double.infinity,
+                      height: 55,
+                      decoration: BoxDecoration(
+                        gradient: _isButtonEnabled && !_isLoading
+                            ? const LinearGradient(
+                                colors: [Color(0xFF4A7C32), Color(0xFF356324)],
+                              )
+                            : LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.white.withOpacity(0.08),
+                                ],
+                              ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: _isButtonEnabled && !_isLoading
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF4A7C32,
+                                  ).withOpacity(0.4),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
                                 ),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                              ]
+                            : [],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _isButtonEnabled && !_isLoading
+                              ? _handleRegister
+                              : null,
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : const Text(
+                                    "S'INSCRIRE",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.2,
                                     ),
                                   ),
-                                  onPressed: (_isButtonEnabled && !_isLoading)
-                                      ? _handleRegister
-                                      : null,
-                                  child: _isLoading
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Text(
-                                          "S'INSCRIRE",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                ),
-                              ),
-
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  "Retour à la connexion",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 20),
+
+                    /// RETOUR LOGIN
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        "← Retour à la connexion",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A73B8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -314,40 +331,137 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildChicField(
-    TextEditingController controller,
-    String hint,
-    IconData icon, {
-    bool isPass = false,
-    TextInputType type = TextInputType.text,
+  /// CHAMP COMPACT (padding réduit)
+  Widget _buildCompactGlassField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.18),
+            Colors.white.withOpacity(0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: TextField(
         controller: controller,
-        obscureText: isPass,
-        keyboardType: type,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
+        keyboardType: keyboardType,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 13,
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
           ),
-          prefixIcon: Icon(icon, color: Colors.white70, size: 20),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
-          contentPadding: const EdgeInsets.symmetric(vertical: 15),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          prefixIcon: Icon(
+            icon,
+            color: Colors.white.withOpacity(0.8),
+            size: 20,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: secondaryGreen.withOpacity(0.5)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 18,
+            horizontal: 8,
           ),
+          isDense: true,
         ),
       ),
     );
   }
+
+  /// PASSWORD COMPACT AVEC ŒIL
+  Widget _buildCompactPasswordField({
+    required TextEditingController controller,
+    required String hint,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.18),
+            Colors.white.withOpacity(0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: !_isPasswordVisible,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.lock_outline_rounded,
+            color: Colors.white.withOpacity(0.8),
+            size: 20,
+          ),
+          suffixIcon: GestureDetector(
+            onTap: () =>
+                setState(() => _isPasswordVisible = !_isPasswordVisible),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _isPasswordVisible
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+                color: Colors.white.withOpacity(0.9),
+                size: 20,
+              ),
+            ),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 18,
+            horizontal: 6,
+          ),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
 }
