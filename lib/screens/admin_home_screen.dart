@@ -259,44 +259,77 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                         // --- GRILLE D'ACTIONS ---
                         Expanded(
-                          child: GridView.count(
-                            physics:
-                                const BouncingScrollPhysics(), // Pour un effet de défilement iOS fluide
-                            padding: const EdgeInsets.only(bottom: 20),
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 15,
-                            mainAxisSpacing: 15,
-                            childAspectRatio: 1.1,
-                            children: [
-                              _buildMenuCard(
-                                context,
-                                "Signalements",
-                                Icons.location_on_rounded,
-                                Colors.orange,
-                                "Voir les alertes",
-                              ),
-                              _buildMenuCard(
-                                context,
-                                "Actualités",
-                                Icons.campaign_rounded,
-                                Colors.blue,
-                                "Informer la ville",
-                              ),
-                              _buildMenuCard(
-                                context,
-                                "Utilisateurs",
-                                Icons.people_alt_rounded,
-                                Colors.green,
-                                "Modérer la base",
-                              ),
-                              _buildMenuCard(
-                                context,
-                                "Statistiques",
-                                Icons.analytics_rounded, 
-                                Colors.blueGrey, 
-                                "Analyses Globales",
-                              ),
-                            ],
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              double width = constraints.maxWidth;
+
+                              // Responsive breakpoints 🔥
+                              int crossAxisCount;
+                              double childAspectRatio;
+
+                              if (width < 600) {
+                                // 📱 Mobile
+                                crossAxisCount = 2;
+                                childAspectRatio = 1.1;
+                              } else if (width < 1000) {
+                                // 📱 Tablette
+                                crossAxisCount = 3;
+                                childAspectRatio = 1.2;
+                              } else {
+                                // 💻 Desktop
+                                crossAxisCount = 4;
+                                childAspectRatio = 1.3;
+                              }
+
+                              return GridView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.only(bottom: 20),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: crossAxisCount,
+                                      crossAxisSpacing: 15,
+                                      mainAxisSpacing: 15,
+                                      childAspectRatio: childAspectRatio,
+                                    ),
+                                itemCount: 4,
+                                itemBuilder: (context, index) {
+                                  final items = [
+                                    [
+                                      "Signalements",
+                                      Icons.location_on_rounded,
+                                      Colors.orange,
+                                      "Voir les alertes",
+                                    ],
+                                    [
+                                      "Actualités",
+                                      Icons.campaign_rounded,
+                                      Colors.blue,
+                                      "Informer la ville",
+                                    ],
+                                    [
+                                      "Utilisateurs",
+                                      Icons.people_alt_rounded,
+                                      Colors.green,
+                                      "Modérer la base",
+                                    ],
+                                    [
+                                      "Statistiques",
+                                      Icons.analytics_rounded,
+                                      Colors.blueGrey,
+                                      "Analyses Globales",
+                                    ],
+                                  ];
+
+                                  return _buildMenuCard(
+                                    context,
+                                    items[index][0] as String,
+                                    items[index][1] as IconData,
+                                    items[index][2] as Color,
+                                    items[index][3] as String,
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -656,154 +689,181 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             }
           }
 
-          return PopScope(
+return PopScope(
             canPop: !isLocked,
-            child: AlertDialog(
-              backgroundColor: Colors.white,
-              elevation: 20,
-              shadowColor: Colors.black45,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-              contentPadding: EdgeInsets.zero,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 30),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isLocked
-                            ? [dangerColor, const Color(0xFFC0392B)]
-                            : [primaryColor, accentColor],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double width = MediaQuery.of(context).size.width;
+
+                // Breakpoints 🔥
+                double dialogWidth = width < 600
+                    ? width *
+                          0.9 // mobile
+                    : width < 1000
+                    ? 400 // tablette
+                    : 450; // desktop
+
+                double pinWidth = width < 600 ? 160 : 200;
+                double padding = width < 600 ? 20 : 30;
+
+                return Center(
+                  child: Container(
+                    width: dialogWidth,
+                    child: AlertDialog(
+                      backgroundColor: Colors.white,
+                      elevation: 20,
+                      shadowColor: Colors.black45,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(25),
-                        topRight: Radius.circular(25),
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isLocked
-                              ? Icons.lock_clock_rounded
-                              : Icons.admin_panel_settings_rounded,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(25),
-                    child: Column(
-                      children: [
-                        Text(
-                          isLocked ? "SÉCURITÉ ACTIVÉE" : "ESPACE ADMINISTRATION",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                            letterSpacing: 1.5,
-                            color: primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          isLocked
-                              ? "Trop de tentatives. Veuillez patienter."
-                              : "Veuillez saisir votre code d'accès.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        if (isLocked) ...[
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                height: 80,
-                                width: 80,
-                                child: CircularProgressIndicator(
-                                  value: secondsRemaining / 30,
-                                  strokeWidth: 8,
-                                  color: dangerColor,
-                                  backgroundColor: dangerColor.withOpacity(0.1),
-                                ),
-                              ),
-                              Text(
-                                "$secondsRemaining",
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: dangerColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ] else ...[
+                      contentPadding: EdgeInsets.zero,
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Container(
-                            width: 180,
-                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            padding: EdgeInsets.symmetric(vertical: padding),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4F7F6),
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.grey[200]!),
+                              gradient: LinearGradient(
+                                colors: isLocked
+                                    ? [dangerColor, const Color(0xFFC0392B)]
+                                    : [primaryColor, accentColor],
+                              ),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(25),
+                                topRight: Radius.circular(25),
+                              ),
                             ),
-                            child: TextField(
-                              controller: controller,
-                              obscureText: true,
-                              autofocus: true,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              maxLength: 4,
-                              onChanged: verifyPin,
-                              style: const TextStyle(
-                                fontSize: 32,
-                                letterSpacing: 20,
-                                fontWeight: FontWeight.bold,
-                                color: accentColor,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isLocked
+                                      ? Icons.lock_clock_rounded
+                                      : Icons.admin_panel_settings_rounded,
+                                  size: width < 600 ? 40 : 50,
+                                  color: Colors.white,
+                                ),
                               ),
-                              decoration: const InputDecoration(
-                                counterText: "",
-                                border: InputBorder.none,
-                                hintText: "****",
-                                hintStyle: TextStyle(color: Colors.black12),
-                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(padding),
+                            child: Column(
+                              children: [
+                                Text(
+                                  isLocked
+                                      ? "SÉCURITÉ ACTIVÉE"
+                                      : "ESPACE ADMINISTRATION",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: width < 600 ? 14 : 16,
+                                    letterSpacing: 1.5,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  isLocked
+                                      ? "Trop de tentatives. Veuillez patienter."
+                                      : "Veuillez saisir votre code d'accès.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: width < 600 ? 12 : 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 25),
+
+                                if (isLocked) ...[
+                                  Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      SizedBox(
+                                        height: width < 600 ? 70 : 80,
+                                        width: width < 600 ? 70 : 80,
+                                        child: CircularProgressIndicator(
+                                          value: secondsRemaining / 30,
+                                          strokeWidth: 6,
+                                          color: dangerColor,
+                                          backgroundColor: dangerColor
+                                              .withOpacity(0.1),
+                                        ),
+                                      ),
+                                      Text(
+                                        "$secondsRemaining",
+                                        style: TextStyle(
+                                          fontSize: width < 600 ? 20 : 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: dangerColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else ...[
+                                  Container(
+                                    width: pinWidth,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF4F7F6),
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: TextField(
+                                      controller: controller,
+                                      obscureText: true,
+                                      autofocus: true,
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      maxLength: 4,
+                                      onChanged: verifyPin,
+                                      style: TextStyle(
+                                        fontSize: width < 600 ? 26 : 32,
+                                        letterSpacing: width < 600 ? 15 : 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: accentColor,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        counterText: "",
+                                        border: InputBorder.none,
+                                        hintText: "****",
+                                        hintStyle: TextStyle(
+                                          color: Colors.black12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 25),
+
+                                if (!isLocked)
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(
+                                        "RETOUR",
+                                        style: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],
-                        const SizedBox(height: 30),
-                        if (!isLocked)
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(
-                                "RETOUR",
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
@@ -834,62 +894,93 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           }
         });
 
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 40),
-              margin: const EdgeInsets.symmetric(horizontal: 50),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+return LayoutBuilder(
+          builder: (context, constraints) {
+            double width = MediaQuery.of(context).size.width;
+
+            // Breakpoints 🔥
+            double modalWidth = width < 600
+                ? width *
+                      0.85 // mobile
+                : width < 1000
+                ? 350 // tablette
+                : 400; // desktop
+
+            double paddingH = width < 600 ? 25 : 40;
+            double paddingV = width < 600 ? 25 : 30;
+            double iconSize = width < 600 ? 50 : 65;
+            double titleSize = width < 600 ? 14 : 16;
+            double textSize = width < 600 ? 12 : 13;
+
+            return Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: modalWidth,
+                  padding: EdgeInsets.symmetric(
+                    vertical: paddingV,
+                    horizontal: paddingH,
                   ),
-                ],
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(width < 600 ? 12 : 15),
+                        decoration: BoxDecoration(
+                          color: (isSuccess ? successColor : dangerColor)
+                              .withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isSuccess
+                              ? Icons.check_circle_rounded
+                              : Icons.gpp_bad_rounded,
+                          color: isSuccess ? successColor : dangerColor,
+                          size: iconSize,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      Text(
+                        isSuccess ? "ACCÈS AUTORISÉ" : "CODE INCORRECT",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          color: primaryColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        isSuccess
+                            ? "Bienvenue dans l'espace gestion"
+                            : "Veuillez réessayer",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: textSize,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: (isSuccess ? successColor : dangerColor).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isSuccess ? Icons.check_circle_rounded : Icons.gpp_bad_rounded,
-                      color: isSuccess ? successColor : dangerColor,
-                      size: 65,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isSuccess ? "ACCÈS AUTORISÉ" : "CODE INCORRECT",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                      color: primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isSuccess ? "Bienvenue dans l'espace gestion" : "Veuillez réessayer",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

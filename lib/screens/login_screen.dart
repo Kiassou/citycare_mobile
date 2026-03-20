@@ -135,11 +135,11 @@ class _LoginScreenState extends State<LoginScreen> {
           Center(
             child: Container(
               margin: EdgeInsets.symmetric(
-                horizontal: isTablet ? 80 : 35,
+                horizontal: isTablet ? 100 : 55,
                 vertical: 60,
               ),
               width: double.infinity,
-              constraints: BoxConstraints(maxWidth: isTablet ? 450 : 380),
+              constraints: BoxConstraints(maxWidth: isTablet ? 480 : 400),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -236,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 25),
 
                     /// BOUTON LOGIN ANIMÉ
                     AnimatedContainer(
@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 35),
+                    const SizedBox(height: 25),
 
                     /// REGISTER
                     Row(
@@ -307,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           "Pas encore membre ? ",
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 13,
                             color: Colors.white.withOpacity(0.85),
                             fontWeight: FontWeight.w500,
                           ),
@@ -343,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isPassword = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -378,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
           prefixIcon: Icon(
             icon,
             color: Colors.white.withOpacity(0.85),
-            size: 24,
+            size: 18,
           ),
           // ICÔNE ŒIL TOGGLE
           suffixIcon: isPassword
@@ -404,14 +404,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? Icons.visibility_off_rounded
                           : Icons.visibility_rounded,
                       color: Colors.white.withOpacity(0.9),
-                      size: 22,
+                      size: 18,
                     ),
                   ),
                 )
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 22,
+            vertical: 10,
             horizontal: 10,
           ),
           isDense: true,

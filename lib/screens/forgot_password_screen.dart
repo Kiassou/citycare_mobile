@@ -107,7 +107,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Center(
             child: Container(
               margin: EdgeInsets.symmetric(
-                horizontal: isTablet ? 80 : 35,
+                horizontal: isTablet ? 100 : 35,
                 vertical: 60,
               ),
               width: double.infinity,
@@ -145,7 +145,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
 
-                    const SizedBox(height: 25),
 
                     /// TITRE GRADIENT
                     ShaderMask(
@@ -178,7 +177,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
                     /// CHAMP EMAIL COMPACT
                     _buildCompactGlassField(
@@ -256,7 +255,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       child: const Text(
                         "← Retour à la connexion",
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1A73B8),
                         ),
@@ -280,7 +279,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     TextInputType? keyboardType,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -319,7 +318,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 20,
+            vertical: 10,
             horizontal: 10,
           ),
           isDense: true,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:citycare_mobile/screens/activity_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config.dart';
@@ -29,26 +30,26 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final userResponse = await http.get(
-        Uri.parse(
-          '${AppConfig.baseUrl}/api/auth/users',
-        ), 
-      );
+      // On lance les deux appels en parallèle pour gagner du temps
+      final responses = await Future.wait([
+        http.get(Uri.parse('${AppConfig.baseUrl}/api/auth/users')),
+        http.get(
+          Uri.parse('${AppConfig.baseUrl}/api/auth/activities'),
+        ), // Nouvelle route
+      ]);
 
-      print("Status Code: ${userResponse.statusCode}");
-
-      if (mounted && userResponse.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(userResponse.body);
+      if (mounted &&
+          responses[0].statusCode == 200 &&
+          responses[1].statusCode == 200) {
         setState(() {
-          _users = data;
-          _filteredUsers = data;
+          _users = jsonDecode(responses[0].body);
+          _filteredUsers = _users;
+          _activities = jsonDecode(responses[1].body); // On remplit la liste
           _isLoading = false;
         });
-      } else {
-        print("Erreur API : ${userResponse.statusCode}");
       }
     } catch (e) {
-      print("Erreur de connexion : $e");
+      debugPrint("Erreur de récupération : $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -277,57 +278,83 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Widget _buildStatsGrid(int admin, int citizen, int inactive) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    return Padding(
+    double _ = MediaQuery.of(context).size.width;
+return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: screenWidth > 600
-            ? 4
-            : 2, 
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-        children: [
-          _buildStatCard(
-            "Total",
-            "${_filteredUsers.length}",
-            Icons.people,
-            Colors.blue,
-            () => _showUserListModal("Liste Complète", _filteredUsers),
-          ),
-          _buildStatCard(
-            "Admins",
-            "$admin",
-            Icons.admin_panel_settings,
-            Colors.orange,
-            () => _showUserListModal(
-              "Admins",
-              _filteredUsers.where((u) => u['role'] == 'admin').toList(),
-            ),
-          ),
-          _buildStatCard(
-            "Citoyens",
-            "$citizen",
-            Icons.group,
-            Colors.green,
-            () => _showUserListModal(
-              "Citoyens",
-              _filteredUsers.where((u) => u['role'] != 'admin').toList(),
-            ),
-          ),
-          _buildStatCard(
-            "Inactifs",
-            "$inactive",
-            Icons.person_off,
-            Colors.red,
-            () => _showUserListModal(
-              "Inactifs",
-              _filteredUsers.where((u) => u['is_active'] == 0).toList(),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          double width = constraints.maxWidth;
+
+          // Breakpoints 🔥
+          int crossAxisCount;
+          double childAspectRatio;
+
+          if (width < 600) {
+            // 📱 Mobile
+            crossAxisCount = 2;
+            childAspectRatio = 1.2;
+          } else if (width < 900) {
+            // 📱 Tablette
+            crossAxisCount = 3;
+            childAspectRatio = 1.3;
+          } else if (width < 1200) {
+            // 💻 Petit desktop
+            crossAxisCount = 4;
+            childAspectRatio = 1.4;
+          } else {
+            // 🖥️ Grand écran
+            crossAxisCount = 5;
+            childAspectRatio = 1.5;
+          }
+
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: childAspectRatio,
+            children: [
+              _buildStatCard(
+                "Total",
+                "${_filteredUsers.length}",
+                Icons.people,
+                Colors.blue,
+                () => _showUserListModal("Liste Complète", _filteredUsers),
+              ),
+              _buildStatCard(
+                "Admins",
+                "$admin",
+                Icons.admin_panel_settings,
+                Colors.orange,
+                () => _showUserListModal(
+                  "Admins",
+                  _filteredUsers.where((u) => u['role'] == 'admin').toList(),
+                ),
+              ),
+              _buildStatCard(
+                "Citoyens",
+                "$citizen",
+                Icons.group,
+                Colors.green,
+                () => _showUserListModal(
+                  "Citoyens",
+                  _filteredUsers.where((u) => u['role'] != 'admin').toList(),
+                ),
+              ),
+              _buildStatCard(
+                "Inactifs",
+                "$inactive",
+                Icons.person_off,
+                Colors.red,
+                () => _showUserListModal(
+                  "Inactifs",
+                  _filteredUsers.where((u) => u['is_active'] == 0).toList(),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -392,10 +419,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () => print("Ouvrir Screen Historique Complet"),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>  ActivityHistoryScreen(activities: _activities),
+                    ),
+                  );
+                },
                 child: const Text(
                   "Voir plus",
-                  style: TextStyle(color: Color(0xFF1A73B8)),
+                  style: TextStyle(
+                    color: Color(0xFF1A73B8),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -411,21 +448,63 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Widget _buildActivityTile(dynamic activity) {
+    // Définition de l'icône et de la couleur selon le type
+    IconData iconData = Icons.history;
+    Color iconColor = Colors.grey;
+
+    if (activity['type'] == 'report') {
+      iconData = Icons.campaign_rounded; // Icône de haut-parleur/alerte
+      iconColor = Colors.orangeAccent;
+    } else if (activity['type'] == 'work') {
+      iconData = Icons.build_circle_rounded; // Icône d'outil
+      iconColor = Colors.greenAccent;
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.history, size: 16, color: Colors.grey),
-          const SizedBox(width: 12),
+          // Cercle de couleur pour l'icône
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(iconData, size: 20, color: iconColor),
+          ),
+          const SizedBox(width: 15),
           Expanded(
-            child: Text(
-              activity['description'] ?? "",
-              style: const TextStyle(fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity['description'] ?? "",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0F4C75),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Petit texte pour la date (optionnel si tu renvoies la date)
+                Text(
+                  "Il y a quelques instants",
+                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                ),
+              ],
             ),
           ),
         ],

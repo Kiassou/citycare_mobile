@@ -44,7 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _validateForm() {
     setState(() {
-      _isButtonEnabled = nomController.text.isNotEmpty &&
+      _isButtonEnabled =
+          nomController.text.isNotEmpty &&
           prenomController.text.isNotEmpty &&
           usernameController.text.isNotEmpty &&
           telController.text.isNotEmpty &&
@@ -82,10 +83,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             content: const Text("Inscription réussie ! Connectez-vous."),
             backgroundColor: secondaryGreen,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
           ),
         );
-        Future.delayed(const Duration(seconds: 2), () => Navigator.pop(context));
+        Future.delayed(
+          const Duration(seconds: 2),
+          () => Navigator.pop(context),
+        );
       } else {
         _showError(data["message"] ?? "Erreur lors de l'inscription");
       }
@@ -107,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
@@ -131,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Center(
             child: Container(
               margin: EdgeInsets.symmetric(
-                horizontal: isTablet ? 80 : 35,
+                horizontal: isTablet ? 100 : 35,
                 vertical: 40,
               ),
               width: double.infinity,
@@ -169,7 +175,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     /// HEADER DANS LA CARTE
-                    
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [Color(0xFF1A73B8), Color(0xFF0F4C75)],
@@ -245,7 +250,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hint: "Mot de passe",
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 20),
 
                     /// BOUTON INSCRIPTION
                     AnimatedContainer(
@@ -286,7 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Center(
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 24,
+                                    height: 10,
                                     width: 24,
                                     child: CircularProgressIndicator(
                                       color: Colors.white,
@@ -307,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 15),
 
                     /// RETOUR LOGIN
                     TextButton(
@@ -315,7 +320,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: const Text(
                         "← Retour à la connexion",
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1A73B8),
                         ),
@@ -339,7 +344,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     TextInputType? keyboardType,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -374,12 +379,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           prefixIcon: Icon(
             icon,
             color: Colors.white.withOpacity(0.8),
-            size: 20,
+            size: 18,
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
-            horizontal: 8,
+            vertical: 10,
+            horizontal: 6,
           ),
           isDense: true,
         ),
@@ -393,7 +398,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -428,7 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           prefixIcon: Icon(
             Icons.lock_outline_rounded,
             color: Colors.white.withOpacity(0.8),
-            size: 20,
+            size: 18,
           ),
           suffixIcon: GestureDetector(
             onTap: () =>
@@ -449,13 +454,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? Icons.visibility_off_rounded
                     : Icons.visibility_rounded,
                 color: Colors.white.withOpacity(0.9),
-                size: 20,
+                size: 18,
               ),
             ),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
+            vertical: 10,
             horizontal: 6,
           ),
           isDense: true,
@@ -463,5 +468,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
 }
