@@ -433,14 +433,31 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
             ),
             Text(report['description'] ?? "Pas de description."),
             const SizedBox(height: 20),
-            if (report['photo_url'] != null)
+            if (report['photo_url'] != null && report['photo_url'] != "NULL")
               ClipRRect(
                 borderRadius: BorderRadius.circular(15),
                 child: Image.network(
-                  "${AppConfig.baseUrl}${report['photo_url']}",
+                  // CONDITION : Si l'url contient déjà "http", on l'utilise direct, sinon on ajoute le baseUrl
+                  report['photo_url'].startsWith('http')
+                      ? report['photo_url']
+                      : "${AppConfig.baseUrl}${report['photo_url']}",
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 100),
+                  width:
+                      double.infinity, // Pour que l'image prenne bien la place
+                  height: 200, // Ajuste selon tes besoins
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 150,
+                    color: Colors.grey[200],
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
               ),
             const SizedBox(height: 30),

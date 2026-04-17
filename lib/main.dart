@@ -11,6 +11,8 @@ void main() {
 }
 
 class CityCareApp extends StatelessWidget {
+  const CityCareApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

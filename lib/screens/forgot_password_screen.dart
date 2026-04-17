@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
   _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
 }
@@ -94,11 +96,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         fit: StackFit.expand,
         children: [
           // 1. IMAGE NETTE EN FOND
+          // 1. IMAGE DE FOND AVEC OVERLAY SOMBRE
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("images/citycare.png"),
+                image: const AssetImage("assets/images/citycare.png"),
                 fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3), // Assombrit l'image de 30%
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),

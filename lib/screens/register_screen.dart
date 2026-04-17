@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -124,11 +126,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fit: StackFit.expand,
         children: [
           // 1. IMAGE NETTE EN FOND
+          // 1. IMAGE DE FOND AVEC OVERLAY SOMBRE
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("images/citycare.png"),
+                image: const AssetImage("assets/images/citycare.png"),
                 fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3), // Assombrit l'image de 30%
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),
@@ -237,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     _buildCompactGlassField(
                       controller: emailController,
-                      hint: "example@citycare.ml",
+                      hint: "Adresse e-mail",
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                     ),

@@ -525,8 +525,9 @@ class _ManageNewsScreenState extends State<ManageNewsScreen> {
 
   Widget _buildRecentList() {
     if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (allNews.isEmpty)
+    if (allNews.isEmpty) {
       return const Center(child: Text("Aucune actualité trouvée"));
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

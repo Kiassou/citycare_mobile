@@ -126,8 +126,9 @@ Future<void> _updateReportStatus(
     if (status == null) return Colors.grey;
     if (status.contains('attente')) return Colors.orange;
     if (status.contains('cours')) return Colors.blue;
-    if (status.contains('resolu') || status.contains('Résolu'))
+    if (status.contains('resolu') || status.contains('Résolu')) {
       return Colors.green;
+    }
     return Colors.blueGrey;
   }
 

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:ui';
 import 'package:citycare_mobile/config.dart';
 import 'package:citycare_mobile/models/user_model.dart';
@@ -7,6 +9,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -85,9 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         String errorMsg = data["message"] ?? "Erreur d'authentification";
-        if (response.statusCode == 401)
+        if (response.statusCode == 401) {
           errorMsg = "Mot de passe incorrect";
-        else if (response.statusCode == 404)
+        } else if (response.statusCode == 404)
           errorMsg = "Utilisateur introuvable";
 
         _showErrorSnackBar(errorMsg);
@@ -121,12 +125,16 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. IMAGE NETTE EN FOND (PAS DE FLou)
+          // 1. IMAGE DE FOND AVEC OVERLAY SOMBRE
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/citycare.png"),
+                image: const AssetImage("assets/images/citycare.png"),
                 fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3), // Assombrit l'image de 30%
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),

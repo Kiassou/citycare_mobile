@@ -1,19 +1,11 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
 
 class AppConfig {
+  // L'URL de base de ton serveur Render (sans le /api final et sans le port :5000)
+  static const String _renderUrl = "https://citycare-backend-4r5z.onrender.com";
+
   static String get baseUrl {
-    // WEB (Chrome)
-    if (kIsWeb) {
-      return 'http://192.168.88.50:5000';
-    }
-
-    // Android (Téléphone ou émulateur)
-    if (Platform.isAndroid) {
-      return 'http://192.168.88.50:5000';
-    }
-
-    // Desktop / iOS
-    return 'http://192.168.88.50:5000';
+    // Plus besoin de distinguer Web, Android ou iOS.
+    // L'URL Render est universelle et sécurisée (HTTPS).
+    return _renderUrl;
   }
 }

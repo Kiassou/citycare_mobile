@@ -68,9 +68,11 @@ class _NewsScreenState extends State<NewsScreen> {
 
   // --- MODAL DE DÉTAILS AMÉLIORÉ ---
   void _showNewsDetails(dynamic news) {
-    final imageUrl = news['image_url'] != null
-        ? "${AppConfig.baseUrl}${news['image_url']}"
-        : null;
+    // 1. Logique de l'URL (Vérification ImgBB vs Serveur local)
+    String rawImageUrl = news['image_url'] ?? "";
+    String finalImageUrl = rawImageUrl.startsWith('http')
+        ? rawImageUrl
+        : "${AppConfig.baseUrl}$rawImageUrl";
 
     showModalBottomSheet(
       context: context,
@@ -84,7 +86,7 @@ class _NewsScreenState extends State<NewsScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.15),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
@@ -92,7 +94,7 @@ class _NewsScreenState extends State<NewsScreen> {
         ),
         child: Column(
           children: [
-            // Barre de fermeture élégante
+            // Barre de fermeture élégante (Handle)
             Container(
               margin: const EdgeInsets.fromLTRB(0, 20, 0, 15),
               height: 5,
@@ -104,25 +106,39 @@ class _NewsScreenState extends State<NewsScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(25),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (imageUrl != null)
+                    // --- AFFICHAGE DE L'IMAGE ---
+                    if (finalImageUrl.isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(25),
                         child: Image.network(
-                          imageUrl,
+                          finalImageUrl, // Correction du nom ici
                           width: double.infinity,
                           height: 280,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => _heroImagePlaceholder(),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 280,
+                              color: Colors.grey[100],
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          },
                         ),
                       ),
+
                     const SizedBox(height: 25),
-                    // Badge catégorie amélioré
+
+                    // Badge catégorie
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -138,65 +154,64 @@ class _NewsScreenState extends State<NewsScreen> {
                         news['category']?.toString().toUpperCase() ?? "INFO",
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Titre avec dégradé
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFF0F4C75), Color(0xFF1A73B8)],
-                      ).createShader(bounds),
-                      child: Text(
-                        news['title'] ?? "",
-                        style: const TextStyle(
-                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.2,
+                          fontSize: 12,
+                          letterSpacing: 1.1,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 25),
-                    // Date élégante
+
+                    const SizedBox(height: 20),
+
+                    // Titre de l'actualité
+                    Text(
+                      news['title'] ?? "Sans titre",
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F4C75),
+                        height: 1.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // Date et Auteur (Design Chic)
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color: const Color(0xFF0F4C75),
-                          ),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 16,
+                          color: Colors.grey[600],
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 6),
                         Text(
                           _formatDate(news['created_at']),
                           style: TextStyle(
-                            fontSize: 14,
                             color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
-                    // Contenu
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Divider(thickness: 1, color: Color(0xFFEEEEEE)),
+                    ),
+
+                    // Contenu de l'article
                     Text(
                       news['content'] ?? "Aucun contenu disponible.",
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         color: Colors.grey[800],
-                        height: 1.7,
+                        height: 1.6,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
+
+                    const SizedBox(height: 50), // Espace final pour le confort
                   ],
                 ),
               ),
@@ -346,10 +361,12 @@ class _NewsScreenState extends State<NewsScreen> {
     );
   }
 
-  Widget _buildNewsCard(dynamic news, bool isTablet) {
-    final imageUrl = news['image_url'] != null
-        ? "${AppConfig.baseUrl}${news['image_url']}"
-        : null;
+Widget _buildNewsCard(dynamic news, bool isTablet) {
+    // 1. Logique de l'URL harmonisée
+    String rawImageUrl = news['image_url'] ?? "";
+    String finalImageUrl = rawImageUrl.startsWith('http')
+        ? rawImageUrl
+        : "${AppConfig.baseUrl}$rawImageUrl";
 
     return GestureDetector(
       onTap: () => _showNewsDetails(news),
@@ -375,7 +392,7 @@ class _NewsScreenState extends State<NewsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image améliorée avec effet glass
+            // Image avec effet Hero et correction du nom de variable
             Hero(
               tag: 'news_${news['id'] ?? news.hashCode}_image',
               child: ClipRRect(
@@ -393,23 +410,41 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                     ],
                   ),
-                  child: imageUrl != null
+                  child:
+                      finalImageUrl
+                          .isNotEmpty // On utilise finalImageUrl
                       ? Image.network(
-                          imageUrl,
+                          finalImageUrl, // On utilise finalImageUrl
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => _iconPlaceholder(),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey[100],
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         )
                       : _iconPlaceholder(),
                 ),
               ),
             ),
             const SizedBox(width: 18),
-            // Contenu avec hiérarchie visuelle
+
+            // Contenu textuel
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badge catégorie avec dégradé
+                  // Badge catégorie
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -432,7 +467,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Titre avec dégradé subtil
+
+                  // Titre
                   Text(
                     news['title'] ?? "",
                     style: TextStyle(
@@ -445,7 +481,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  // Date avec icône améliorée
+
+                  // Date
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -476,13 +513,14 @@ class _NewsScreenState extends State<NewsScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // Flèche animée
-            Transform.translate(
-              offset: const Offset(5, 0),
+
+            // Flèche de direction
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: Icon(
                 Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey[400],
+                size: 14,
+                color: Colors.grey[300],
               ),
             ),
           ],

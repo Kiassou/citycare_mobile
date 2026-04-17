@@ -31,12 +31,14 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   // Variables pour les news dynamiques
   List<dynamic> _realNews = [];
   bool _isLoadingNews = true;
+  late Future<List<dynamic>> _myReportsFuture; // On stocke le futur ici
 
   @override
   void initState() {
     super.initState();
     _fetchRealNews();
     _fetchUnreadCount();
+    _myReportsFuture = _fetchMyRecentReports();
 
     // Timer pour le défilement automatique des news
     _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
@@ -108,18 +110,21 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   }
 
   // --- WIDGETS DE LA SECTION NEWS ---
-
   Widget _buildNewsSection() {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 "Actualités du jour",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -140,7 +145,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 200, // Légèrement plus haut pour le côté chic
           child: _isLoadingNews
               ? const Center(child: CircularProgressIndicator())
               : _realNews.isEmpty
@@ -148,25 +153,57 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
               : PageView.builder(
                   controller: _pageController,
                   itemCount: _realNews.length,
-                  onPageChanged: (index) => _currentPage = index,
+                  onPageChanged: (index) =>
+                      setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
                     final news = _realNews[index];
-                    final imageUrl = "${AppConfig.baseUrl}${news['image_url']}";
+
+                    // --- LOGIQUE DE L'URL CORRIGÉE ---
+                    String rawImageUrl = news['image_url'] ?? "";
+                    String finalImageUrl = rawImageUrl.startsWith('http')
+                        ? rawImageUrl
+                        : "${AppConfig.baseUrl}$rawImageUrl";
+
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        image: DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                          onError: (err, stack) => const Icon(
-                            Icons.broken_image,
-                            color: Colors.white,
-                          ),
-                        ),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 5,
                       ),
-                      child: _buildGradientOverlay(
-                        news['title'] ?? "Actualité",
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          20,
+                        ), // Coins arrondis chics
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Image de fond
+                            Image.network(
+                              finalImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                            // Overlay Gradient pour le texte
+                            _buildGradientOverlay(news['title'] ?? "Actualité"),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -424,7 +461,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         children: [
           _buildActionCard(
             "Signalements",
-            Icons.list_alt_rounded,
+            'assets/images/signalements.png', // Chemin de l'image
             const Color(0xFF1A73B8),
             () {
               Navigator.push(
@@ -438,7 +475,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           const SizedBox(width: 15),
           _buildActionCard(
             "Nouveau",
-            Icons.add_circle_outline,
+            'assets/images/nouveau.png', // Chemin de l'image
             const Color(0xFF4CAF50),
             () {
               Navigator.push(
@@ -456,7 +493,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   Widget _buildActionCard(
     String title,
-    IconData icon,
+    String imagePath,
     Color color,
     VoidCallback onTap,
   ) {
@@ -464,23 +501,77 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          height: 140, // Hauteur fixe pour que les deux cartes soient égales
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 32),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              children: [
+                // 1. L'image de fond qui remplit tout
+                Image.asset(
+                  imagePath,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover, // Remplit tout le container
+                ),
+
+                // 2. Un calque de dégradé pour assombrir le bas (et rendre le texte lisible)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(
+                          0.7,
+                        ), // Noir transparent en bas
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 3. Le texte positionné en bas
+                Positioned(
+                  bottom: 15,
+                  left: 15,
+                  right: 15,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors
+                              .white, // Texte en blanc car le fond est sombre
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      Container(
+                        height: 3,
+                        width: 30,
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: BoxDecoration(
+                          color: color, // Petite barre de rappel de la couleur
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -528,12 +619,14 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   Widget _buildMyReportsList() {
     return FutureBuilder<List<dynamic>>(
-      future: _fetchMyRecentReports(),
+      future: _myReportsFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text("Aucun signalement."));
+        }
         final reports = snapshot.data!;
         return ListView.builder(
           shrinkWrap: true,
@@ -555,6 +648,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                         : Colors.blueGrey),
               _getIconForType(report['type_signalement'] ?? ""),
               _formatTimeAgo(report['date_signalement']),
+              false, // or provide actual isTablet value if available
             );
           },
         );
@@ -564,52 +658,126 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   Widget _buildModernReportCard(
     String title,
-    String subtitle,
+    String location,
     String status,
     Color statusColor,
     IconData icon,
     String time,
+    bool isTablet,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        // Une petite bordure subtile pour le côté "chic"
+        border: Border.all(color: Colors.grey.withOpacity(0.05)),
       ),
       child: Row(
         children: [
+          // --- L'icône stylisée (Le focus central) ---
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  statusColor.withOpacity(0.15),
+                  statusColor.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(icon, color: statusColor),
+            child: Icon(icon, color: statusColor, size: 28),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 16),
+
+          // --- Infos du signalement ---
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F4C75),
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Text(
-            status,
-            style: TextStyle(
-              color: statusColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+
+          // --- Badge de statut & Temps ---
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Badge Minimaliste
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status == 'en_attente' ? 'Attente' : status.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[400],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -729,13 +897,23 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   }
 
   // --- HELPERS ---
-
   IconData _getIconForType(String type) {
-    if (type.contains('échets')) return Icons.delete_outline;
-    if (type.contains('eau')) return Icons.water_drop;
-    if (type.contains('électri')) return Icons.lightbulb_outline;
-    if (type.contains('route')) return Icons.add_road;
-    return Icons.report_problem_outlined;
+    switch (type.toLowerCase()) {
+      case 'déchets':
+      case 'ordures':
+        return Icons.delete_outline;
+      case 'eau':
+      case "fuite d'eau":
+        return Icons.water_drop;
+      case 'électricité':
+      case 'éclairage':
+        return Icons.lightbulb_outline;
+      case 'route':
+      case 'nids de poule':
+        return Icons.add_road;
+      default:
+        return Icons.report_problem_outlined;
+    }
   }
 
   String _formatTimeAgo(String dateStr) {

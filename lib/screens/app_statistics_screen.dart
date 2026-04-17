@@ -159,8 +159,9 @@ class _AppStatisticsScreenState extends State<AppStatisticsScreen> {
   }
 
   Widget _buildCitizenPieChart() {
-    if (pieSections.isEmpty)
+    if (pieSections.isEmpty) {
       return const Center(child: Text("Aucune donnée disponible"));
+    }
     return PieChart(
       PieChartData(
         sectionsSpace: 3,
@@ -171,8 +172,9 @@ class _AppStatisticsScreenState extends State<AppStatisticsScreen> {
   }
 
   Widget _buildReportLineChart() {
-    if (reportSpots.isEmpty)
+    if (reportSpots.isEmpty) {
       return const Center(child: Text("Pas de données disponibles"));
+    }
     return LineChart(
       LineChartData(
         lineBarsData: [
@@ -188,8 +190,9 @@ class _AppStatisticsScreenState extends State<AppStatisticsScreen> {
   }
 
   Widget _buildSystemBarChart() {
-    if (maintenanceGroups.isEmpty)
+    if (maintenanceGroups.isEmpty) {
       return const Center(child: Text("Aucune donnée disponible"));
+    }
     return BarChart(
       BarChartData(
         barGroups: maintenanceGroups,

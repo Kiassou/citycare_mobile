@@ -441,7 +441,7 @@ return Padding(
           if (_activities.isEmpty)
             const Center(child: Text("Aucune activité récente"))
           else
-            ..._activities.take(10).map((a) => _buildActivityTile(a)).toList(),
+            ..._activities.take(10).map((a) => _buildActivityTile(a)),
         ],
       ),
     );

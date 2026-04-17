@@ -707,7 +707,7 @@ return PopScope(
                 double padding = width < 600 ? 20 : 30;
 
                 return Center(
-                  child: Container(
+                  child: SizedBox(
                     width: dialogWidth,
                     child: AlertDialog(
                       backgroundColor: Colors.white,
